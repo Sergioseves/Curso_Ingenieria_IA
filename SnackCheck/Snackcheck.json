@@ -1,0 +1,781 @@
+{
+  "name": "Snackcheck",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nutrition-check",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "1231d531-b2c9-4074-9fe1-33d518196a39",
+      "name": "Webhook",
+      "webhookId": "515497c0-4366-4fd3-b8f2-d85af5837789"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ee52665c-1fc1-43e3-911c-4f69e6e55f5e",
+              "leftValue": "={{ $json.body.barcode }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        0
+      ],
+      "id": "7db12332-21ab-4a7c-ba6b-f46cd9050bd8",
+      "name": "¿hay un código de barras ?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Falta el código de barras.\",\n  \"mensaje\": \"Debes enviar un código de barras en el campo barcode.\",\n  \"ejemplo\": {\n    \"barcode\": \"3017620422003\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        96
+      ],
+      "id": "2f3b64f2-a321-4f97-9631-81ee1e3d2552",
+      "name": "Error : Falta código de barras"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "91f52d16-9b5d-4a02-8552-1aba97c8d4e5",
+              "leftValue": "={{ $json.body.barcode }}",
+              "rightValue": "^[0-9]+$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        -80
+      ],
+      "id": "ef16a200-8e89-4591-b8a1-2c340d4c93ea",
+      "name": "Validar código numérico"
+    },
+    {
+      "parameters": {
+        "url": "=https://world.openfoodfacts.org/api/v2/product/{{ $json.body.barcode }}.json?fields=product_name,brands,nutriscore_grade,nutriments",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        -176
+      ],
+      "id": "a6f4cea7-94e9-4f60-ac4b-5bb20f0c87d5",
+      "name": "HTTP Request",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ad6fcc5b-39c6-4a81-b6fd-60cc7df7ee38",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        -176
+      ],
+      "id": "bc5235a7-2b2c-40cc-ac53-b90a3e5ca08b",
+      "name": "¿Producto Existe?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Producto no encontrado.\",\n  \"mensaje\": \"No hemos encontrado ningún producto con ese código de barras.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        -80
+      ],
+      "id": "f9d444fd-cd41-4c0e-bcb0-83fddd44db42",
+      "name": "Error No Existe El Producto"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"error\": \"Código de barras no válido.\",\n  \"mensaje\": \"El código de barras debe contener únicamente números.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        672,
+        16
+      ],
+      "id": "e64f1025-ae23-4b3f-9da4-8c880d298f95",
+      "name": "Error no Es Numérico"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "260005d6-262c-422f-b368-e49f8f0b4311",
+              "name": "nombre",
+              "value": "={{ $json.product.product_name }}",
+              "type": "string"
+            },
+            {
+              "id": "094fbcaa-90af-4b9d-a070-9d712cfd4512",
+              "name": "marca",
+              "value": "={{ $json.product.brands }}",
+              "type": "string"
+            },
+            {
+              "id": "b7f0bc7f-ebb3-4447-ab1d-74faff3bc3f8",
+              "name": "nutriscore",
+              "value": "={{ $json.product.nutriscore_grade }}",
+              "type": "string"
+            },
+            {
+              "id": "946f6c8b-fa3c-45c6-845a-4e70e19cf65e",
+              "name": "azucar",
+              "value": "={{ $json.product.nutriments['added-sugars_100g'] }}",
+              "type": "number"
+            },
+            {
+              "id": "61cdc772-f5a5-44bc-8656-2128e1717bd9",
+              "name": "sal",
+              "value": "={{ $json.product.nutriments.salt_100g }}",
+              "type": "number"
+            },
+            {
+              "id": "84cd213f-7446-430e-b9b0-d5efff5b7ab8",
+              "name": "grasa",
+              "value": "={{ $json.product.nutriments.fat_100g }}",
+              "type": "number"
+            },
+            {
+              "id": "142aedab-7512-4f7e-97c9-ef17968ae95a",
+              "name": "calorias",
+              "value": "={{ $json.product.nutriments['energy-kcal_100g'] }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1120,
+        -208
+      ],
+      "id": "67fe4afe-a7c2-4154-b1d4-6ad13c8e7b10",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d9983e77-017c-4c12-9ca2-9dd931355964",
+              "leftValue": "={{ $json.azucar }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "3ef769c0-91e0-4704-9441-39740126cf06",
+              "leftValue": "={{ $json.sal }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "29e9840c-21ac-4c87-92ce-d8d280045d72",
+              "leftValue": "={{ $json.grasa }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        -208
+      ],
+      "id": "da5e2d9b-9c19-4f56-847d-d6461d28b57e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"resultado\": \"Datos insuficientes\",\n  \"mensaje\": \"No hay suficientes datos nutricionales para clasificar este producto.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1568,
+        -112
+      ],
+      "id": "c201e6b6-6eb1-49ec-ad81-e78133f9a979",
+      "name": "Error falta algun dato"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dd0d76bc-5988-4d8a-963f-451235d65f54",
+              "leftValue": "={{ $json.nutriscore }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        -256
+      ],
+      "id": "0fc65bb9-2578-4a2f-9a0a-01a3bffa7cb7",
+      "name": "Comprobacíon del nutriscore"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "371becff-ca73-4205-97d2-992b3260a2de",
+              "name": "resultado",
+              "value": "={{ $json.semaforo }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2016,
+        -160
+      ],
+      "id": "f7ce5fa3-9b5d-4170-80cc-ff614a13d62c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\nlet resultado = \"saludable\";\n\nif ($json.nutriscore === \"c\") {\n  resultado = \"moderado\";\n}\n\nif ($json.nutriscore === \"d\" || $json.nutriscore === \"e\") {\n  resultado = \"no saludable\";\n}\n\nreturn {\n  ...$json,\n  resultado_nutriscore: resultado\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        -304
+      ],
+      "id": "ccf3a972-b525-4788-8261-89999bb23982",
+      "name": "Comprobacion de saludable"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\nlet altos = 0;\n\nif ($json.azucar > 22.5) {\n  altos++;\n}\n\nif ($json.sal > 1.5) {\n  altos++;\n}\n\nif ($json.grasa > 17.5) {\n  altos++;\n}\n\nlet semaforo = \"saludable\";\n\nif (altos == 1) {\n  semaforo = \"moderado\";\n}\n\nif (altos >= 2) {\n  semaforo = \"no saludable\";\n}\n\nreturn {\n  ...$json,\n  nutrientes_altos: altos,\n  semaforo: semaforo\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -256
+      ],
+      "id": "055cbf01-57c7-475c-8b5e-bf34bc8bb542",
+      "name": "Comprobacion Nutrientes + Semaforo"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Add a new field called 'myNewField' to the JSON of the item\nlet resultado = \"saludable\";\n\nif ($json.semaforo == \"moderado\" || $json.resultado_nutriscore == \"moderado\") {\n  resultado = \"moderado\";\n}\n\nif ($json.semaforo == \"no saludable\" || $json.resultado_nutriscore == \"no saludable\") {\n  resultado = \"no saludable\";\n}\n\nreturn {\n  ...$json,\n  resultado: resultado\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2224,
+        -320
+      ],
+      "id": "48420c9d-97c5-4cf7-8c9b-f005f7148c58",
+      "name": "Comprobación final"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2464,
+        -304
+      ],
+      "id": "4b7e0aa3-5a07-4d06-923f-716edcfb1236",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1a3cd269-9999-4af4-a62f-5a4e0f93ff9b",
+              "name": "resultado",
+              "value": "={{ $json.resultado }}",
+              "type": "string"
+            },
+            {
+              "id": "2cbf4896-6272-40f9-97f6-8c2b216d928f",
+              "name": "nombre",
+              "value": "={{ $json.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "f4a505a4-94db-4ed3-a819-e4fb96681577",
+              "name": "azucar",
+              "value": "={{ $json.azucar }}",
+              "type": "number"
+            },
+            {
+              "id": "cf83142b-505f-4520-a24f-12efa0d3fb35",
+              "name": "sal",
+              "value": "={{ $json.sal }}",
+              "type": "number"
+            },
+            {
+              "id": "f78c784a-372e-4336-8b98-4c017478404a",
+              "name": "grasa",
+              "value": "={{ $json.grasa }}",
+              "type": "number"
+            },
+            {
+              "id": "f8aeca99-d4d5-45bc-8597-9337404810ce",
+              "name": "calorias",
+              "value": "={{ $json.calorias }}",
+              "type": "number"
+            },
+            {
+              "id": "e5f52a4e-da90-40ae-b801-4b59567cedd3",
+              "name": "nutrientes_altos",
+              "value": "={{ $json.nutrientes_altos }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2688,
+        -304
+      ],
+      "id": "a68c87ae-9af4-4cf0-9776-e8fefe6e4031",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Genera el veredicto final de este producto siguiendo EXACTAMENTE estas instrucciones.\n\nDATOS DEL PRODUCTO:\nProducto: {{ $json.nombre }}\nMarca: {{ $('Comprobación final').item.json.marca }}\nClasificación: {{ $json.resultado }}\nAzúcar: {{ $json.azucar }} g/100g\nSal: {{ $json.sal }} g/100g\nGrasa: {{ $json.grasa }} g/100g\nCalorías: {{ $json.calorias }} kcal/100g\nNutrientes altos: {{ $json.nutrientes_altos }}\n\nFORMATO DE RESPUESTA:\n\nPrimera línea:\n[CLASIFICACIÓN] + una frase corta.\n\nDespués muestra los datos:\n\nAzúcar: X g/100g\nSal: X g/100g\nGrasa: X g/100g\nCalorías: X kcal/100g\n\nPara azúcar, sal y grasa indica también si es ALTO o no según estos valores:\n- Azúcar: alto si es mayor de 22.5 g/100g.\n- Sal: alto si es mayor de 1.5 g/100g.\n- Grasa: alto si es mayor de 17.5 g/100g.\n\nFinalmente escribe un párrafo breve y amigable explicando el resultado.\n\nREGLAS IMPORTANTES:\n- No calcules ni cambies la clasificación. Usa exactamente el valor de \"Clasificación\".\n- No inventes información.\n- No menciones dietas, enfermedades ni recomendaciones médicas.\n- No digas que un alimento es \"poco equilibrado\" si ese dato no aparece en la información.\n- No hagas una explicación larga.\n- Usa un tono prudente si la clasificación es \"moderado\" o \"no saludable\".\n- Usa un tono positivo si la clasificación es \"saludable\".\n- Devuelve únicamente la respuesta final, sin explicar estas instrucciones.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        2912,
+        -304
+      ],
+      "id": "261d6701-369c-4fa5-805f-7b6418df5b49",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        2912,
+        -128
+      ],
+      "id": "d101de7e-53b6-48ac-8311-6a457e3c5e8c",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "NWxVOuXxH5bp1zmt",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nlet texto = $input.first().json.text;\n\ntexto = texto.split(\"\\\\n\").join(\"\\n\");\n\nreturn {\n  respuesta: texto\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3264,
+        -304
+      ],
+      "id": "a287d19c-30e7-4a90-9780-3d4507b62a30",
+      "name": "Saltos de lineas"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ respuesta: $json.respuesta }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3488,
+        -304
+      ],
+      "id": "be045cdd-6e00-4c33-a851-a59fbece9a19",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "¿hay un código de barras ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿hay un código de barras ?": {
+      "main": [
+        [
+          {
+            "node": "Validar código numérico",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error : Falta código de barras",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar código numérico": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error no Es Numérico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "¿Producto Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Producto Existe?": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error No Existe El Producto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Comprobacion Nutrientes + Semaforo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error falta algun dato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comprobacíon del nutriscore": {
+      "main": [
+        [
+          {
+            "node": "Comprobacion de saludable",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comprobacion Nutrientes + Semaforo": {
+      "main": [
+        [
+          {
+            "node": "Comprobacíon del nutriscore",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comprobacion de saludable": {
+      "main": [
+        [
+          {
+            "node": "Comprobación final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comprobación final": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Saltos de lineas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Saltos de lineas": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b1aec63f-a8b7-4633-b513-f3d00ede02da",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0036172d043cf99f257e388ec6da03b0f88ee67db3ca4f903c1f0d9f1d91b8c4"
+  },
+  "nodeGroups": [],
+  "id": "uCz3omRVHWXqO7GD",
+  "tags": []
+}
